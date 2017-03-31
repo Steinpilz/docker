@@ -1,10 +1,5 @@
 FROM fsharp:4.1.0.1
 
-LABEL maintainer=https://github.com/steinpilz \
-  fsharp.version=4.1.0.1 \
-  node.version=6.10.0 \
-  yarn.version=0.21.3-1
-
 # Install Node.js. Based on https://github.com/nodejs/docker-node/blob/master/6.10/Dockerfile
 # with yarn removed due to https://github.com/nodejs/docker-node/issues/351
 
@@ -51,3 +46,8 @@ RUN apt-get update -y \
   && rm -rf /var/lib/apt/lists/*
 
 # End install yarn
+
+LABEL maintainer=https://github.com/steinpilz \
+  fsharp.version=4.1.0.1 \
+  node.version=6.10.1 \
+  yarn.version=0.21.3-1
