@@ -1,0 +1,1 @@
+Based on [official Microsoft ASP>NET Core 1.1.1 build image](https://hub.docker.com/r/microsoft/aspnetcore-build/) with yarn installed additionally.
