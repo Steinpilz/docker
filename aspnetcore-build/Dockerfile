@@ -6,10 +6,10 @@ RUN apt-get update -y \
   && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
   && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
   && apt-get update -y \
-  && apt-get install yarn=0.21.3-1 -y \
+  && apt-get install yarn=1.0.1-1 -y \
   && rm -rf /var/lib/apt/lists/*
 
 # End install yarn
 
 LABEL maintainer=https://github.com/steinpilz \
-  yarn.version=0.21.3-1
+  yarn.version=1.0.1-1
