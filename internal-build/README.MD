@@ -1,0 +1,1 @@
+Copypasted [official fsharp with .net core image](https://github.com/fsprojects/docker-fsharp/blob/master/4.1.34/netcore/Dockerfile)
