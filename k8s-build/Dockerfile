@@ -18,7 +18,7 @@ ENV SKAFFOLD_VERSION="0.24.0"
 RUN wget -O /usr/bin/skaffold https://storage.googleapis.com/skaffold/releases/v${SKAFFOLD_VERSION}/skaffold-linux-amd64 \
   && chmod +x /usr/bin/skaffold
 
-ENV GIT_VERSION="2.18.1-r0"
+ENV GIT_VERSION="2.20.1-r0"
 RUN apk add --no-cache git=${GIT_VERSION}
 
 ENTRYPOINT ["docker-entrypoint.sh"]
