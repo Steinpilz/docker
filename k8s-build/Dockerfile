@@ -11,10 +11,11 @@ RUN wget https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-li
   && tar -xvf helm-v${HELM_VERSION}-linux-amd64.tar.gz \
   && mv linux-amd64/helm /usr/bin \
   && chmod +x /usr/bin/helm \
-  && rm -f /helm-v${HELM_VERSION}-linux-amd64.tar.gz
+  && rm -f /helm-v${HELM_VERSION}-linux-amd64.tar.gz \
+  && helm init --client-only
 
 # skaffold
-ENV SKAFFOLD_VERSION="0.26.0"
+ENV SKAFFOLD_VERSION="0.27.0"
 RUN wget -O /usr/bin/skaffold https://storage.googleapis.com/skaffold/releases/v${SKAFFOLD_VERSION}/skaffold-linux-amd64 \
   && chmod +x /usr/bin/skaffold
 
