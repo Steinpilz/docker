@@ -15,12 +15,12 @@ RUN wget https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-li
   && helm init --client-only
 
 # skaffold
-ENV SKAFFOLD_VERSION="0.27.0"
+ENV SKAFFOLD_VERSION="0.32.0"
 RUN wget -O /usr/bin/skaffold https://storage.googleapis.com/skaffold/releases/v${SKAFFOLD_VERSION}/skaffold-linux-amd64 \
   && chmod +x /usr/bin/skaffold
 
-ENV GIT_VERSION="2.20.1-r0"
-RUN apk add --no-cache git=${GIT_VERSION}
+ENV GIT_VERSION="2.22"
+RUN apk add --no-cache git~=${GIT_VERSION}
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["sh"]
