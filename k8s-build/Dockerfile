@@ -15,7 +15,7 @@ RUN wget https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-li
   && helm init --client-only
 
 # skaffold
-ENV SKAFFOLD_VERSION="0.32.0"
+ENV SKAFFOLD_VERSION="0.31.0"
 RUN wget -O /usr/bin/skaffold https://storage.googleapis.com/skaffold/releases/v${SKAFFOLD_VERSION}/skaffold-linux-amd64 \
   && chmod +x /usr/bin/skaffold
 
