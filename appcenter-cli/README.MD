@@ -1,0 +1,1 @@
+[App Center CLI](https://docs.microsoft.com/en-us/appcenter/cli/) based on the official node 12 image.
