@@ -20,7 +20,10 @@ RUN wget -O /usr/bin/skaffold https://storage.googleapis.com/skaffold/releases/v
   && chmod +x /usr/bin/skaffold
 
 ENV GIT_VERSION="2.22"
-RUN apk add --no-cache git~=${GIT_VERSION}
+RUN apk add --no-cache "git>=${GIT_VERSION}"
+
+ENV JQ_VERSION="1.6"
+RUN apk add --no-cache jq~=${JQ_VERSION}
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["sh"]
