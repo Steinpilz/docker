@@ -7,5 +7,6 @@ docker run --rm $(docker build -q .) \
   git version; \
   skaffold version; \
   helm version --client; \
-  kubectl version --client \
+  kubectl version --client; \
+  jq --version;
   "
