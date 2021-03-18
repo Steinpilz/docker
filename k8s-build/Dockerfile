@@ -1,96 +1,71 @@
-# Licensed under the MIT License.
-
-FROM docker:latest AS installer-env
+FROM mcr.microsoft.com/dotnet/sdk:5.0-alpine3.13
 
 #
-# PowerShell Core integration based on https://github.com/PowerShell/PowerShell-Docker/blob/master/release/stable/alpine312/docker/Dockerfile
+# Docker
+# https://github.com/docker-library/docker/blob/9728dce92752348ac2623bcf96436f1a89e15dd3/20.10/Dockerfile
 
-# Define Args for the needed to add the package
-ARG PS_VERSION=7.1.3
-ARG PS_PACKAGE=powershell-${PS_VERSION}-linux-alpine-x64.tar.gz
-ARG PS_PACKAGE_URL=https://github.com/PowerShell/PowerShell/releases/download/v${PS_VERSION}/${PS_PACKAGE}
-ARG PS_INSTALL_VERSION=7
-
-# Download the Linux tar.gz and save it
-ADD ${PS_PACKAGE_URL} /tmp/linux.tar.gz
-
-# define the folder we will be installing PowerShell to
-ENV PS_INSTALL_FOLDER=/opt/microsoft/powershell/$PS_INSTALL_VERSION
-
-# Create the install folder
-RUN mkdir -p ${PS_INSTALL_FOLDER}
-
-# Unzip the Linux tar.gz
-RUN tar zxf /tmp/linux.tar.gz -C ${PS_INSTALL_FOLDER} -v
-
-
-# Start a new stage so we lose all the tar.gz layers from the final image
-FROM docker:latest
-
-
-#
-# PowerShell Core continues...
-
-# Copy only the files we need from the previous stage
-COPY --from=installer-env ["/opt/microsoft/powershell", "/opt/microsoft/powershell"]
-
-# Define Args and Env needed to create links
-ARG PS_INSTALL_VERSION=7
-ENV PS_INSTALL_FOLDER=/opt/microsoft/powershell/$PS_INSTALL_VERSION \
-    \
-    # Define ENVs for Localization/Globalization
-    DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false \
-    LC_ALL=en_US.UTF-8 \
-    LANG=en_US.UTF-8 \
-    # set a fixed location for the Module analysis cache
-    PSModuleAnalysisCachePath=/var/cache/microsoft/powershell/PSModuleAnalysisCache/ModuleAnalysisCache \
-    POWERSHELL_DISTRIBUTION_CHANNEL=PSDocker-Alpine-3.12
-
-# Install dotnet dependencies and ca-certificates
 RUN apk add --no-cache \
-    ca-certificates \
-    less \
-    \
-    # PSReadline/console dependencies
-    ncurses-terminfo-base \
-    \
-    # .NET Core dependencies
-    krb5-libs \
-    libgcc \
-    libintl \
-    libssl1.1 \
-    libstdc++ \
-    tzdata \
-    userspace-rcu \
-    zlib \
-    icu-libs \
-    && apk -X https://dl-cdn.alpinelinux.org/alpine/edge/main add --no-cache \
-    lttng-ust \
-    \
-    # PowerShell remoting over SSH dependencies
-    openssh-client \
-    \
-    # Create the pwsh symbolic link that points to powershell
-    && ln -s ${PS_INSTALL_FOLDER}/pwsh /usr/bin/pwsh \
-    \
-    # Give all user execute permissions and remove write permissions for others
-    && chmod a+x,o-w ${PS_INSTALL_FOLDER}/pwsh \
-    # intialize powershell module cache
-    # and disable telemetry
-    && export POWERSHELL_TELEMETRY_OPTOUT=1 \
-    && pwsh \
-        -NoLogo \
-        -NoProfile \
-        -Command " \
-          \$ErrorActionPreference = 'Stop' ; \
-          \$ProgressPreference = 'SilentlyContinue' ; \
-          while(!(Test-Path -Path \$env:PSModuleAnalysisCachePath)) {  \
-            Write-Host "'Waiting for $env:PSModuleAnalysisCachePath'" ; \
-            Start-Sleep -Seconds 6 ; \
-          }"
+		ca-certificates \
+# DOCKER_HOST=ssh://... -- https://github.com/docker/cli/pull/1014
+		openssh-client
+
+# set up nsswitch.conf for Go's "netgo" implementation (which Docker explicitly uses)
+# - https://github.com/docker/docker-ce/blob/v17.09.0-ce/components/engine/hack/make.sh#L149
+# - https://github.com/golang/go/blob/go1.9.1/src/net/conf.go#L194-L275
+# - docker run --rm debian:stretch grep '^hosts:' /etc/nsswitch.conf
+RUN [ ! -e /etc/nsswitch.conf ] && echo 'hosts: files dns' > /etc/nsswitch.conf
+
+ENV DOCKER_VERSION 20.10.5
+# TODO ENV DOCKER_SHA256
+# https://github.com/docker/docker-ce/blob/5b073ee2cf564edee5adca05eee574142f7627bb/components/packaging/static/hash_files !!
+# (no SHA file artifacts on download.docker.com yet as of 2017-06-07 though)
+
+RUN set -eux; \
+	\
+	apkArch="$(apk --print-arch)"; \
+	case "$apkArch" in \
+		'x86_64') \
+			url='https://download.docker.com/linux/static/stable/x86_64/docker-20.10.5.tgz'; \
+			;; \
+		'armhf') \
+			url='https://download.docker.com/linux/static/stable/armel/docker-20.10.5.tgz'; \
+			;; \
+		'armv7') \
+			url='https://download.docker.com/linux/static/stable/armhf/docker-20.10.5.tgz'; \
+			;; \
+		'aarch64') \
+			url='https://download.docker.com/linux/static/stable/aarch64/docker-20.10.5.tgz'; \
+			;; \
+		*) echo >&2 "error: unsupported architecture ($apkArch)"; exit 1 ;; \
+	esac; \
+	\
+	wget -O docker.tgz "$url"; \
+	\
+	tar --extract \
+		--file docker.tgz \
+		--strip-components 1 \
+		--directory /usr/local/bin/ \
+	; \
+	rm docker.tgz; \
+	\
+	dockerd --version; \
+	docker --version
+
+COPY modprobe.sh /usr/local/bin/modprobe
+COPY docker-entrypoint.sh /usr/local/bin/
+
+# https://github.com/docker-library/docker/pull/166
+#   dockerd-entrypoint.sh uses DOCKER_TLS_CERTDIR for auto-generating TLS certificates
+#   docker-entrypoint.sh uses DOCKER_TLS_CERTDIR for auto-setting DOCKER_TLS_VERIFY and DOCKER_CERT_PATH
+# (For this to work, at least the "client" subdirectory of this path needs to be shared between the client and server containers via a volume, "docker cp", or other means of data sharing.)
+ENV DOCKER_TLS_CERTDIR=/certs
+# also, ensure the directory pre-exists and has wide enough permissions for "dockerd-entrypoint.sh" to create subdirectories, even when run in "rootless" mode
+RUN mkdir /certs /certs/client && chmod 1777 /certs /certs/client
+# (doing both /certs and /certs/client so that if Docker does a "copy-up" into a volume defined on /certs/client, it will "do the right thing" by default in a way that still works for rootless users)
+
 
 #
-# Custom tools
+# Other tools
 
 # kubectl
 ENV KUBECTL_VERSION="1.20.4"
@@ -116,12 +91,6 @@ RUN apk add --no-cache "git>=${GIT_VERSION}"
 ENV JQ_VERSION="1.6"
 RUN apk add --no-cache jq~=${JQ_VERSION}
 
+
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["sh"]
-
-
-
-
-
-
-
